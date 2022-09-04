@@ -51,5 +51,5 @@ Contributors
 <<<<<<< HEAD
 Okolo Ifeanyi iceyokolo@gmail.com | Sarah Enobabor blizzsarah@gmail.com
 =======
-Okolo Ifeanyi iceyokolo@gmail.com || Sarah Enonabor sarahblizz@gmail.com
+Okolo Ifeanyi iceyokolo@gmail.com || Sarah Enobabor blizzsarah@gmail.com
 >>>>>>> 34e0ca83d6dd43ccccf31d6687c6b13c86a52a3d
