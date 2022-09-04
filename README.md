@@ -48,4 +48,4 @@ list of fucntions and system calls used
 - write (man 2 write)
 
 Contributors 
-Okolo Ifeanyi iceyokolo@gmail.com | Sarah Enonabor sarahblizz@gmail.com
+Okolo Ifeanyi iceyokolo@gmail.com | Sarah Enobabor blizzsarah@gmail.com
