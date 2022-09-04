@@ -2,7 +2,7 @@
 
 /**
  * add_key - create a new environment variable
- * @vars: pointer to struct of variabl
+ * @vars: pointer to struct of variables
  *
  * Return: void
  */
