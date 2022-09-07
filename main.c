@@ -1,65 +1,120 @@
-#include "main.h"
-
+#include "shell.h"
 /**
- * sig_handler - handles ^C signal interupt
- * @uuv: unused variable (required for signal function prototype)
- *
- * Return: void
+ * main - initialize the variables of the program
+ * @argc: number of values received from the command line
+ * @argv: values received from the command line
+ * @env: number of values received from the command line
+ * Return: zero on succes.
  */
-static void sig_handler(int uuv)
+int main(int argc, char *argv[], char *env[])
 {
-	(void) uuv;
-	if (sig_flag == 0)
-		_puts("\n$ ");
-	else
-		_puts("\n"); 
+	data_of_program data_struct = {NULL}, *data = &data_struct;
+	char *prompt = "";
+
+	inicialize_data(data, argc, argv, env);
+
+	signal(SIGINT, handle_ctrl_c);
+
+	if (isatty(STDIN_FILENO) && isatty(STDOUT_FILENO) && argc == 1)
+	{/* We are in the terminal, interactive mode */
+		errno = 2;/*???????*/
+		prompt = PROMPT_MSG;
+	}
+	errno = 0;
+	sisifo(prompt, data);
+	return (0);
 }
 
 /**
- * main - main function for the shell
- * @argc: number of arguments passed to main
- * @argv: array of arguments passed to main
- * @environment: array of environment variables
- *
- * Return: 0 or exit status, or ?
+ * handle_ctrl_c - print the prompt in a new line
+ * when the signal SIGINT (ctrl + c) is send to the program
+ * @UNUSED: option of the prototype
  */
-int main(int argc __attribute__((unused)), char **argv, char **environment)
+void handle_ctrl_c(int opr UNUSED)
 {
-	size_t len_buffer = 0;
-	unsigned int is_pipe = 0, i;
-	vars_t vars = {NULL, NULL, NULL, 0, NULL, 0, NULL};
+	_print("\n");
+	_print(PROMPT_MSG);
+}
 
-	vars.argv = argv;
-	vars.env = make_env(environment);
-	signal(SIGINT, sig_handler);
-	if (!isatty(STDIN_FILENO))
-		is_pipe = 1;
-	if (is_pipe == 0)
-		_puts("$ ");
-	sig_flag = 0;
-	while (_getline(&(vars.buffer), &len_buffer, stdin) != -1)
+/**
+ * inicialize_data - inicialize the struct with the info of the program
+ * @data: pointer to the structure of data
+ * @argv: array of arguments pased to the program execution
+ * @env: environ pased to the program execution
+ * @argc: number of values received from the command line
+ */
+void inicialize_data(data_of_program *data, int argc, char *argv[], char **env)
+{
+	int i = 0;
+
+	data->program_name = argv[0];
+	data->input_line = NULL;
+	data->command_name = NULL;
+	data->exec_counter = 0;
+	/* define the file descriptor to be readed*/
+	if (argc == 1)
+		data->file_descriptor = STDIN_FILENO;
+	else
 	{
-		sig_flag = 1;
-		vars.count++;
-		vars.commands = tokenize(vars.buffer, ";");
-		for (i = 0; vars.commands && vars.commands[i] != NULL; i++)
+		data->file_descriptor = open(argv[1], O_RDONLY);
+		if (data->file_descriptor == -1)
 		{
-			vars.av = tokenize(vars.commands[i], "\n \t\r");
-			if (vars.av && vars.av[0])
-				if (check_for_builtins(&vars) == NULL)
-					check_for_path(&vars);
-		free(vars.av);
+			_printe(data->program_name);
+			_printe(": 0: Can't open ");
+			_printe(argv[1]);
+			_printe("\n");
+			exit(127);
 		}
-		free(vars.buffer);
-		free(vars.commands);
-		sig_flag = 0;
-		if (is_pipe == 0)
-			_puts("$ ");
-		vars.buffer = NULL;
 	}
-	if (is_pipe == 0)
-		_puts("\n");
-	free_env(vars.env);
-	free(vars.buffer);
-	exit(vars.status);
+	data->tokens = NULL;
+	data->env = malloc(sizeof(char *) * 50);
+	if (env)
+	{
+		for (; env[i]; i++)
+		{
+			data->env[i] = str_duplicate(env[i]);
+		}
+	}
+	data->env[i] = NULL;
+	env = data->env;
+
+	data->alias_list = malloc(sizeof(char *) * 20);
+	for (i = 0; i < 20; i++)
+	{
+		data->alias_list[i] = NULL;
+	}
+}
+/**
+ * sisifo - its a infinite loop that shows the prompt
+ * @prompt: prompt to be printed
+ * @data: its a infinite loop that shows the prompt
+ */
+void sisifo(char *prompt, data_of_program *data)
+{
+	int error_code = 0, string_len = 0;
+
+	while (++(data->exec_counter))
+	{
+		_print(prompt);
+		error_code = string_len = _getline(data);
+
+		if (error_code == EOF)
+		{
+			free_all_data(data);
+			exit(errno); /* if EOF is the fisrt Char of string, exit*/
+		}
+		if (string_len >= 1)
+		{
+			expand_alias(data);
+			expand_variables(data);
+			tokenize(data);
+			if (data->tokens[0])
+			{ /* if a text is given to prompt, execute */
+				error_code = execute(data);
+				if (error_code != 0)
+					_print_error(error_code, data);
+			}
+			free_recurrent_data(data);
+		}
+	}
 }
